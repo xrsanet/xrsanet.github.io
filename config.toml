@@ -1,0 +1,67 @@
+baseurl = "https://xrsa.net"
+disablePathToLower = false
+languageCode = "en-uk"
+title = "Ben Draper"
+theme = "Hugo-Octopress"
+paginate = 6
+metadataformat = "yaml"
+pygmentscodefences = true
+pygmentsStyle = "solarized-dark"
+
+[taxonomies]
+  category = "categories"
+  tag = "tags"
+
+[outputs]
+  section = ["HTML"]
+  taxonomy = ["HTML"]
+  taxonomyTerm = ["HTML"]
+
+[permalinks]
+  post = "/:year/:month/:day/:title/"
+
+[[menu.main]]
+  Name = "Home"
+  URL = "/"
+  weight = 1
+
+[[menu.main]]
+  Name = "About"
+  URL = "/about"
+  weight = 2
+
+[params]
+
+  navigationNewWindow = true
+  sidebarRecentLimit = 5
+  googleAnalytics = "UA-53816716-1"
+
+  sidebarHeader = "Whoami"
+
+  sidebarText = """
+  I am an established engineer, with a great interest in Security, Automation and Modern Architectures.
+  </br></br>
+  If you do want to contact me you can email me at `ben@xrsa.net` or check out my social networking pages below.
+  """
+
+  sidebarMenuEnabled = false
+  truncate = true
+  author = "Ben Draper"
+  subtitle = "DevOps, Security, Coding and Hacking"
+  continueReadingText = "More..."
+
+  twitter = "https://twitter.com/xrsanet/"
+  gitlab = "https://gitlab.com/xrsanet"
+  linkedin = "https://www.linkedin.com/in/bendraper00"
+
+  rss = true
+  defaultDescription = ""
+  tableOfContents = false
+  generateTaxonomyList = true
+  mainSections = ["post"]
+  compactIndex = true
+
+[blackfriday]
+  hrefTargetBlank = true
+  fractions = false
+  smartypants = false

@@ -1,0 +1,40 @@
+version: 2.0
+
+jobs:
+    build:
+        docker:
+            - image: felicianotech/docker-hugo:latest
+        working_directory: ~/xrsanet.github.io
+        steps:
+            - add_ssh_keys:
+                fingerprints:
+                    - "e1:37:93:f8:80:da:51:7b:0a:a3:c7:dc:32:b9:93:07"
+            - checkout
+            - run:
+                name: Get current site
+                working_directory: ~/
+                command: git clone -b master git@github.com:xrsanet/xrsanet.github.io.git public
+            - run:
+                name: Generate site
+                working_directory: ~/xrsanet.github.io
+                command: HUGO_ENV=production hugo -d ~/public
+            - deploy:
+                name: Deploy to Github Pages
+                working_directory: ~/public
+                command: |
+                    git config credential.helper 'cache --timeout=120'
+                    git config user.email "ben@xrsa.net"
+                    git config user.name "Deployment Bot"
+                    git add .
+                    git commit --allow-empty -m "Trigger deployment"
+                    git push -q git@github.com:xrsanet/xrsanet.github.io.git master
+
+workflows:
+  version: 2
+  main:
+    jobs:
+    - build:
+        filters:
+          branches:
+            only: source
+
