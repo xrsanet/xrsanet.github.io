@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <url>
+    <loc>https://xrsa.net/about/</loc>
+    <lastmod>2019-11-03T17:39:52+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://xrsa.net/</loc>
+    <lastmod>2019-11-03T17:39:52+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://xrsa.net/post/</loc>
+    <lastmod>2019-11-03T17:39:52+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://xrsa.net/2019/11/03/reviving-blog/</loc>
+    <lastmod>2019-11-03T17:39:52+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://xrsa.net/categories/</loc>
+    <lastmod>2015-04-25T17:10:35+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://xrsa.net/2015/04/25/ctdb-glusterfs-nfs-event-monitor-script/</loc>
+    <lastmod>2015-04-25T17:10:35+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://xrsa.net/categories/sysadmin/</loc>
+    <lastmod>2015-04-25T17:10:35+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://xrsa.net/2015/04/01/block-dns-queries-based-on-domain-names-via-iptables/</loc>
+    <lastmod>2015-04-01T16:08:22+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://xrsa.net/2015/02/04/installing-ovirt-3-5-on-centos-7-hosted-engine/</loc>
+    <lastmod>2015-02-04T19:30:13+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://xrsa.net/categories/virtualization/</loc>
+    <lastmod>2015-02-04T19:30:13+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://xrsa.net/2014/08/25/running-vmware-esxi-under-ovirt-3.5/</loc>
+    <lastmod>2014-08-25T15:12:48+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://xrsa.net/tags/</loc>
+  </url>
+  
+</urlset>

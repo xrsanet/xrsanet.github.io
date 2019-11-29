@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Ben Draper</title>
+    <link>https://xrsa.net/</link>
+    <description>Recent content on Ben Draper</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-uk</language>
+    <lastBuildDate>Sun, 03 Nov 2019 17:39:52 +0000</lastBuildDate>
+    
+	<atom:link href="https://xrsa.net/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>About</title>
+      <link>https://xrsa.net/about/</link>
+      <pubDate>Sun, 03 Nov 2019 17:39:52 +0000</pubDate>
+      
+      <guid>https://xrsa.net/about/</guid>
+      <description>Interests I love anything to do with Security, Automation and modern software technologies. If you do want to know anything more about me check out my social networking pages.
+Contact Email: ben@xrsa.net
+Licensing / Legals Example code and configuration files are public domain, use them as you wish. However, I do not take any responsibility if you decide to use them in your production environment.
+Please do not copy my blog content.</description>
+    </item>
+    
+    <item>
+      <title>Reviving Blog</title>
+      <link>https://xrsa.net/2019/11/03/reviving-blog/</link>
+      <pubDate>Sun, 03 Nov 2019 17:39:52 +0000</pubDate>
+      
+      <guid>https://xrsa.net/2019/11/03/reviving-blog/</guid>
+      <description>I am bringing my old blog back to life.
+More to come, once I have moved this blog over to a proper CI/CD process.</description>
+    </item>
+    
+    <item>
+      <title>CTDB Glusterfs NFS Event Monitor Script</title>
+      <link>https://xrsa.net/2015/04/25/ctdb-glusterfs-nfs-event-monitor-script/</link>
+      <pubDate>Sat, 25 Apr 2015 17:10:35 +0000</pubDate>
+      
+      <guid>https://xrsa.net/2015/04/25/ctdb-glusterfs-nfs-event-monitor-script/</guid>
+      <description>There is no CTDB monitor script for the GlusterFS NFS implementation as you cannot use the normal NFS event script that comes with CTDB, this is because GlusterFS manages NFS.
+Without a proper monitoring script CTDB will not initiate a failover when NFS services fail, below I have created a script to solve this problem.
+Code #!/bin/sh # Event script to monitor GlusterFS NFS in a cluster environment # Source: https://xrsa.</description>
+    </item>
+    
+    <item>
+      <title>Block DNS Queries Based on Domain Names via IPtables</title>
+      <link>https://xrsa.net/2015/04/01/block-dns-queries-based-on-domain-names-via-iptables/</link>
+      <pubDate>Wed, 01 Apr 2015 16:08:22 +0000</pubDate>
+      
+      <guid>https://xrsa.net/2015/04/01/block-dns-queries-based-on-domain-names-via-iptables/</guid>
+      <description>This code will generate or apply rules for IPtables to block DNS queries based on domain names. I wrote this script because I did not want to manually convert each section of the domain into hex with their respective sizes every time I needed to block a random set of domains.
+Example # ./BlockDomain.py Syntax: ./BlockDomain.py gen|apply &amp;lt;DOMAIN&amp;gt;... gen : Generate the required IPTable rules apply : Apply the required IPTable rules (Must be root) Examples: .</description>
+    </item>
+    
+    <item>
+      <title>Installing Ovirt 3 5 on Centos 7 Hosted Engine</title>
+      <link>https://xrsa.net/2015/02/04/installing-ovirt-3-5-on-centos-7-hosted-engine/</link>
+      <pubDate>Wed, 04 Feb 2015 19:30:13 +0000</pubDate>
+      
+      <guid>https://xrsa.net/2015/02/04/installing-ovirt-3-5-on-centos-7-hosted-engine/</guid>
+      <description>Below are simple step by step instructions for installing the node and getting it configured for the hosted engine using CentOS 7.
+Installation Requirements  Installing Hosted Engine on CentOS 7 requires oVirt 3.5.1 Both the node and engine will be running CentOS 7 (Minimal Installation) Ensure the host is fully updated via yum update and rebooted before proceeding  Prerequisites DNS
+Ensure you have set up hostnames for the host and engine.</description>
+    </item>
+    
+    <item>
+      <title>Running VMware ESXi Under Ovirt 3.5</title>
+      <link>https://xrsa.net/2014/08/25/running-vmware-esxi-under-ovirt-3.5/</link>
+      <pubDate>Mon, 25 Aug 2014 15:12:48 +0000</pubDate>
+      
+      <guid>https://xrsa.net/2014/08/25/running-vmware-esxi-under-ovirt-3.5/</guid>
+      <description>Getting VMware ESXi to install and run properly under oVirt was an interesting experience. However, it does require patching Qemu.
+Please note: I am assuming your oVirt host is Fedora 20. You may skip Step 1 if you have already installed my patched RPMS. However, read on if your curious why the patches are needed.
+Step 1 – Patching Qemu Current SRPM for patching Qemu is here: qemu-1.6.2-7.fc20.src.rpm
+Please note: I am using the SRPM from the Fedora repository instead of the latest source from Qemu.</description>
+    </item>
+    
+  </channel>
+</rss>

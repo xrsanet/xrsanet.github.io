@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  
+  <meta name="viewport" content="width=device-width,minimum-scale=1,maximum-scale=1">
+
+  
+    
+    
+      <link href="/css/fonts.css" rel="stylesheet" type="text/css">
+    
+  
+
+  
+  <title>Running VMware ESXi Under Ovirt 3.5</title>
+
+  
+  
+  <link rel="stylesheet" href="/css/hugo-octopress.css">
+
+  
+  
+
+  
+    <link rel="stylesheet" href="/css/fork-awesome.min.css">
+  
+
+  
+  <link href="https://xrsa.net/favicon.png" rel="icon">
+
+  
+  
+
+  <meta name="description" content="" />
+  <meta name="keywords" content="">
+  <meta name="author" content="Ben Draper">
+
+  
+  <meta name="generator" content="Hugo 0.60.0" />
+
+  
+  
+
+  
+  
+</head>
+<body>
+
+
+<header role="banner">
+<hgroup>
+  
+  <h1><a href="https://xrsa.net/">Ben Draper</a></h1>
+    <h2>DevOps, Security, Coding and Hacking</h2>
+</hgroup></header>
+
+
+<nav role="navigation">
+<fieldset class="mobile-nav">
+  
+  <select onchange="location = this.value;">
+    <option value="">Navigate…</option>
+      
+        <option value="https://xrsa.net/">» Home</option>
+      
+        <option value="https://xrsa.net/about">» About</option>
+      
+  </select>
+</fieldset>
+
+
+<ul class="main-navigation">
+  
+  
+    
+      <li><a href="https://xrsa.net/" title="Home">Home</a></li>
+    
+  
+    
+      <li><a href="https://xrsa.net/about" title="About"  target="_blank" >About</a></li>
+    
+  
+</ul>
+
+<ul class="subscription">
+  
+    
+        <a href="https://xrsa.net/index.xml" target="_blank" type="application/rss+xml" title="RSS"><i class="fa fa-rss-square fa-lg"></i></a>
+    
+  
+</ul>
+
+
+</nav>
+
+
+<div id="main">
+  <div id="content">
+    <div>
+      <article class="hentry" role="article">
+
+        
+        
+
+<header>
+  <p class="meta">Aug 25, 2014
+     - 5 minute read 
+    
+
+    
+    
+      - <a class="label" href="https://xrsa.net/categories/virtualization/">Virtualization </a>
+    
+  </p>
+  <h1 class="entry-title">
+     Running VMware ESXi Under Ovirt 3.5 
+  </h1>
+</header>
+
+
+        <div class="entry-content">
+          
+          
+          
+          <p>Getting VMware ESXi to install and run properly under oVirt was an interesting experience. However, it does require patching Qemu.</p>
+<p><em>Please note:</em> I am assuming your oVirt host is Fedora 20. You may skip Step 1 if you have already installed my patched RPMS. However, read on if your curious why the patches are needed.</p>
+<h1 id="step-1--patching-qemu">Step 1 – Patching Qemu</h1>
+<p>Current SRPM for patching Qemu is here: <a href="https://dl.fedoraproject.org/pub/fedora/linux/updates/20/SRPMS/qemu-1.6.2-7.fc20.src.rpm">qemu-1.6.2-7.fc20.src.rpm</a></p>
+<p><em>Please note:</em> I am using the SRPM from the Fedora repository instead of the latest source from Qemu. I prefer it this way as it reduces potential compatibility issues.</p>
+<p><strong>QEMU Patch 1: VMware IO Port Emulation</strong></p>
+<p>When you install ESXi it will attempt to use this incomplete emulated port and PSOD, you need to disable this in Qemu itself with the following patch:</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">--- a/hw/i386/pc_piix.c	2014-08-21 13:52:26.819006292 +0100
++++ b/hw/i386/pc_piix.c	2014-08-20 15:00:19.808038672 +0100
+@@ -183,7 +183,7 @@
+     pc_vga_init<span style="color:#719e07">(</span>isa_bus, pci_enabled ? pci_bus : NULL<span style="color:#719e07">)</span>;
+ 
+     /* init basic PC hardware */
+-    pc_basic_device_init<span style="color:#719e07">(</span>isa_bus, gsi, &amp;rtc_state, &amp;floppy, xen_enabled<span style="color:#719e07">(</span><span style="color:#719e07">)</span><span style="color:#719e07">)</span>;
++    pc_basic_device_init<span style="color:#719e07">(</span>isa_bus, gsi, &amp;rtc_state, &amp;floppy, 1<span style="color:#719e07">)</span>;
+ 
+     pc_nic_init<span style="color:#719e07">(</span>isa_bus, pci_bus<span style="color:#719e07">)</span>;</code></pre></div>
+<p><a href="https://github.com/qemu/qemu/commit/9b23cfb76b3a5e9eb5cc899eaf2f46bc46d33ba4">Dagrh has submitted a patch upstream</a>, which is a better version of the above patch and its merged with all major versions of qemu.</p>
+<p><strong>QEMU Patch 2: vmxnet3 Does Not Pad Short Frames</strong></p>
+<p>I fully installed VMware ESXi and realized networking was not working as expected. It was pretty bizarre as the ESXi guest would receive packets from a routed network without issues.</p>
+<p>Oddly though, any Linux guests on the same bridge and host could communicate with each other but failed to communicate with the ESXi guest itself or the guests ESXi hosted. I have to thank Paul Sherratt for helping me figure out this odd networking issue. The problem was that short Ethernet frames were not being padded, ESXi would simply discard these frames including ARP Requests and this prevented communication.</p>
+<p>So I thought the best way to fix this problem was to write a patch and get vmxnet3 to pad short frames itself. This will ensure frames do not get discarded by the ESXi guest.</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">--- a/hw/net/vmxnet3.c	2014-08-21 13:52:49.379006588 +0100
++++ b/hw/net/vmxnet3.c	2014-08-20 15:00:19.811038672 +0100
+@@ -34,6 +34,7 @@
+ 
+ <span style="color:#586e75">#define PCI_DEVICE_ID_VMWARE_VMXNET3_REVISION 0x1</span>
+ <span style="color:#586e75">#define VMXNET3_MSIX_BAR_SIZE 0x2000</span>
++#define MIN_BUF_SIZE <span style="color:#2aa198">60</span>
+ 
+ <span style="color:#586e75">#define VMXNET3_BAR0_IDX      (0)</span>
+ <span style="color:#586e75">#define VMXNET3_BAR1_IDX      (1)</span>
+@@ -1862,12 +1863,21 @@
+ <span style="color:#719e07">{</span>
+     VMXNET3State *s <span style="color:#719e07">=</span> qemu_get_nic_opaque<span style="color:#719e07">(</span>nc<span style="color:#719e07">)</span>;
+     size_t bytes_indicated;
++    uint8_t min_buf<span style="color:#719e07">[</span>MIN_BUF_SIZE<span style="color:#719e07">]</span>;
+ 
+     <span style="color:#719e07">if</span> <span style="color:#719e07">(</span>!vmxnet3_can_receive<span style="color:#719e07">(</span>nc<span style="color:#719e07">)</span><span style="color:#719e07">)</span> <span style="color:#719e07">{</span>
+         VMW_PKPRN<span style="color:#719e07">(</span><span style="color:#2aa198">&#34;Cannot receive now&#34;</span><span style="color:#719e07">)</span>;
+         <span style="color:#719e07">return</span> -1;
+     <span style="color:#719e07">}</span>
+ 
++    /* Pad to minimum Ethernet frame length */
++    <span style="color:#719e07">if</span> <span style="color:#719e07">(</span>size &lt; sizeof<span style="color:#719e07">(</span>min_buf<span style="color:#719e07">)</span><span style="color:#719e07">)</span> <span style="color:#719e07">{</span>
++        memcpy<span style="color:#719e07">(</span>min_buf, buf, size<span style="color:#719e07">)</span>;
++        memset<span style="color:#719e07">(</span>&amp;min_buf<span style="color:#719e07">[</span>size<span style="color:#719e07">]</span>, 0, sizeof<span style="color:#719e07">(</span>min_buf<span style="color:#719e07">)</span> - size<span style="color:#719e07">)</span>;
++        <span style="color:#268bd2">buf</span> <span style="color:#719e07">=</span> min_buf;
++        <span style="color:#268bd2">size</span> <span style="color:#719e07">=</span> sizeof<span style="color:#719e07">(</span>min_buf<span style="color:#719e07">)</span>;
++    <span style="color:#719e07">}</span>
++
+     <span style="color:#719e07">if</span> <span style="color:#719e07">(</span>s-&gt;peer_has_vhdr<span style="color:#719e07">)</span> <span style="color:#719e07">{</span>
+         vmxnet_rx_pkt_set_vhdr<span style="color:#719e07">(</span>s-&gt;rx_pkt, <span style="color:#719e07">(</span>struct virtio_net_hdr *<span style="color:#719e07">)</span>buf<span style="color:#719e07">)</span>;
+         <span style="color:#268bd2">buf</span> <span style="color:#719e07">+=</span> sizeof<span style="color:#719e07">(</span>struct virtio_net_hdr<span style="color:#719e07">)</span>;</code></pre></div>
+<p><a href="https://github.com/qemu/qemu/commit/40a87c6c9b11ef9c14e0301f76abf0eb2582f08e">I have submitted this patch upstream</a>. This patch has been merged with all major versions of qemu.</p>
+<h1 id="step-2--ovirt-hostengine-preparation">Step 2 – oVirt Host/Engine Preparation</h1>
+<p><strong>Installing Required VDSM Hooks</strong></p>
+<p>The following two hooks allows for nested virtualization and mac spoofing.</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-----------
+-<span style="color:#719e07">[</span> Host <span style="color:#719e07">]</span> -
+-----------
+<span style="color:#586e75"># yum install -y vdsm-hook-nestedvt</span>
+<span style="color:#586e75"># yum install -y vdsm-hook-macspoof</span></code></pre></div>
+<p><em>Please note:</em> You’ll need to reboot the oVirt host at some point before nested virtualization is enabled for the kvm_{intel,amd} modules. However, VMware ESXi will install without this being enabled so you can continue.</p>
+<p>By default oVirt only allows you to select the following NIC Models rtl8139, e1000 and VirtIO, unfortunately ESXi does not work with any of them. I have created a custom vdsm hook so the NIC Type can be changed at boot up.</p>
+<p>Create a file: <strong>/usr/libexec/vdsm/hooks/before_vm_start/50_vmwarehost</strong> with the below code and ensure it has 755 permissions, this must be created on the oVirt host.</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#586e75">#!/usr/bin/python</span>
+<span style="color:#586e75"># Source: https://xrsa.net</span>
+<span style="color:#586e75"># Author: Ben Draper</span>
+<span style="color:#586e75"># Email: ben@xrsa.net</span>
+<span style="color:#586e75">#</span>
+ 
+<span style="color:#719e07">import</span> os
+<span style="color:#719e07">import</span> hooking
+ 
+<span style="color:#719e07">def</span> <span style="color:#268bd2">changeInterfaceType</span>(interface):
+    <span style="color:#2aa198"></span><span style="color:#2aa198">&#34;&#34;&#34;</span><span style="color:#2aa198">
+</span><span style="color:#2aa198"></span><span style="color:#2aa198">    Verify the interface has been set to virtio, if so</span><span style="color:#2aa198">
+</span><span style="color:#2aa198"></span><span style="color:#2aa198">    change the NIC type to vmxnet</span><span style="color:#2aa198">
+</span><span style="color:#2aa198"></span><span style="color:#2aa198">    </span><span style="color:#2aa198">&#34;&#34;&#34;</span>
+    <span style="color:#719e07">for</span> filterElement <span style="color:#719e07">in</span> interface<span style="color:#719e07">.</span>getElementsByTagName(<span style="color:#2aa198"></span><span style="color:#2aa198">&#39;</span><span style="color:#2aa198">model</span><span style="color:#2aa198">&#39;</span>):
+        <span style="color:#719e07">if</span> isInterfaceFilter(filterElement):
+            filterElement<span style="color:#719e07">.</span>setAttribute(<span style="color:#2aa198"></span><span style="color:#2aa198">&#39;</span><span style="color:#2aa198">type</span><span style="color:#2aa198">&#39;</span>,<span style="color:#2aa198"></span><span style="color:#2aa198">&#39;</span><span style="color:#2aa198">vmxnet3</span><span style="color:#2aa198">&#39;</span>)
+ 
+ 
+<span style="color:#719e07">def</span> <span style="color:#268bd2">isInterfaceFilter</span>(filterElement):
+    <span style="color:#2aa198"></span><span style="color:#2aa198">&#34;&#34;&#34;</span><span style="color:#2aa198">
+</span><span style="color:#2aa198"></span><span style="color:#2aa198">    Verify we have the interface set to virtio</span><span style="color:#2aa198">
+</span><span style="color:#2aa198"></span><span style="color:#2aa198">    </span><span style="color:#2aa198">&#34;&#34;&#34;</span>
+    filterValue <span style="color:#719e07">=</span> filterElement<span style="color:#719e07">.</span>getAttribute(<span style="color:#2aa198"></span><span style="color:#2aa198">&#39;</span><span style="color:#2aa198">type</span><span style="color:#2aa198">&#39;</span>)
+    <span style="color:#719e07">return</span> filterValue <span style="color:#719e07">==</span> <span style="color:#2aa198"></span><span style="color:#2aa198">&#39;</span><span style="color:#2aa198">virtio</span><span style="color:#2aa198">&#39;</span>
+ 
+ 
+<span style="color:#719e07">def</span> <span style="color:#268bd2">main</span>():
+ 
+    <span style="color:#719e07">if</span> hooking<span style="color:#719e07">.</span>tobool(os<span style="color:#719e07">.</span>environ<span style="color:#719e07">.</span>get(<span style="color:#2aa198"></span><span style="color:#2aa198">&#39;</span><span style="color:#2aa198">vmwarehost</span><span style="color:#2aa198">&#39;</span>)):
+        domxml <span style="color:#719e07">=</span> hooking<span style="color:#719e07">.</span>read_domxml()
+ 
+        <span style="color:#719e07">for</span> interface <span style="color:#719e07">in</span> domxml<span style="color:#719e07">.</span>getElementsByTagName(<span style="color:#2aa198"></span><span style="color:#2aa198">&#39;</span><span style="color:#2aa198">interface</span><span style="color:#2aa198">&#39;</span>):
+            changeInterfaceType(interface)
+ 
+        hooking<span style="color:#719e07">.</span>write_domxml(domxml)
+ 
+ 
+<span style="color:#719e07">if</span> __name__ <span style="color:#719e07">==</span> <span style="color:#2aa198"></span><span style="color:#2aa198">&#39;</span><span style="color:#2aa198">__main__</span><span style="color:#2aa198">&#39;</span>:
+    main()</code></pre></div>
+<p>Now that we have finished installing the hooks we need to make sure the engine and host can use them.</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-------------
+-<span style="color:#719e07">[</span> Engine <span style="color:#719e07">]</span> -
+-------------
+<span style="color:#586e75"># engine-config -s &#34;UserDefinedVMProperties=macspoof=(true|false);vmwarehost=(true|false)&#34;</span>
+<span style="color:#586e75"># service ovirt-engine restart</span></code></pre></div>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-----------
+-<span style="color:#719e07">[</span> Host <span style="color:#719e07">]</span> -
+-----------
+<span style="color:#586e75"># service vdsmd restart</span></code></pre></div>
+<p><strong>Disabling MSR Emulation</strong></p>
+<p>This will need to be disabled globally.</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-----------
+-<span style="color:#719e07">[</span> Host <span style="color:#719e07">]</span> -
+-----------
+<span style="color:#586e75"># echo 1 &gt; /sys/module/kvm/parameters/ignore_msrs</span>
+<span style="color:#586e75"># echo &#39;options kvm ignore_msrs=1&#39; &gt; /etc/modprobe.d/kvm.conf</span></code></pre></div>
+<p>This is all we need to do in the back end.</p>
+<h1 id="step-3--create-vmware-esxi-vm">Step 3 – Create VMware ESXi VM</h1>
+<p>To get the VMware ESXi guest to install properly ensure the following is set.</p>
+<ul>
+<li>2 x vCPUs</li>
+<li>4GB RAM</li>
+<li>Operating System: Other OS</li>
+<li>Optimized for: Server</li>
+<li>Custom Properties: vmwarehost = true, macspoof = true</li>
+<li>NIC Type: VirtIO (My hook will change this at run time to vmxnet3)</li>
+<li>Disk Type: IDE</li>
+</ul>
+<p><img src="/images/ovirt_esxi.jpg" alt="ovirt_esxi"></p>
+<h1 id="step-4--modify-esxi-host-configuration">Step 4 – Modify ESXi Host Configuration</h1>
+<p>You would have noticed your VMware installation warn you about not being able to run 64bit guests due to invalid virtualization support, even though KVM was configured to push the required nested virtualization flags to the virtual machine. KVM does not fully implement all the required features, therefore VMware must emulate them.</p>
+<p>Ensure you add the following options in <strong>/etc/vmware/config</strong></p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">hv.assumeEnabled <span style="color:#719e07">=</span> <span style="color:#2aa198">&#34;TRUE&#34;</span>
+vmx.allowNested <span style="color:#719e07">=</span> <span style="color:#2aa198">&#34;TRUE&#34;</span></code></pre></div>
+<p>Once you have added those options to the configuration file reboot your ESXi server.</p>
+
+        </div>
+        
+
+<footer>
+  <p class="meta">
+    <span class="byline author vcard">Posted by <span class="fn">Ben Draper</span></span>
+    
+    <time>Aug 25, 2014</time>
+    
+    </span>
+  </p>
+
+  
+
+  <p class="meta">
+    
+
+    
+      <a class="basic-alignment right" href="https://xrsa.net/2015/02/04/installing-ovirt-3-5-on-centos-7-hosted-engine/" title="Installing Ovirt 3 5 on Centos 7 Hosted Engine">Installing Ovirt 3 5 on Centos 7 Hosted Engine</a>
+    
+  </p>
+  
+</footer>
+
+      </article>
+    </div>
+    
+
+<aside class="sidebar thirds">
+  <section class="first odd">
+
+    
+      <h1>Whoami</h1>
+    
+
+    <p>
+      
+        I am an established engineer, with a great interest in Security, Automation and Modern Architectures.
+<!-- raw HTML omitted --><!-- raw HTML omitted -->
+If you do want to contact me you can email me at <a href="mailto:%60ben@xrsa.net">`ben@xrsa.net</a>` or check out my social networking pages below.
+      
+    </p>
+  </section>
+
+
+
+  
+  <ul class="sidebar-nav">
+    <li class="sidebar-nav-item">
+      
+      
+      <a target="_blank" href="https://gitlab.com/xrsanet" title="https://gitlab.com/xrsanet"><i class="fa fa-gitlab fa-3x"></i></a>
+      <a target="_blank" href="https://twitter.com/xrsanet/" title="https://twitter.com/xrsanet/"><i class="fa fa-twitter fa-3x"></i></a>
+      
+         
+      
+      <a target="_blank" href="https://www.linkedin.com/in/bendraper00" title="https://www.linkedin.com/in/bendraper00"><i class="fa fa-linkedin fa-3x"></i></a>
+      
+      
+      
+      
+      
+      
+
+    
+    
+    </li>
+  </ul>
+
+  
+
+  
+
+  
+  
+  
+    
+      <section class="even">
+        <h1>Recent Posts</h1>
+        <ul id="recent_posts">
+          
+          
+            
+          
+            
+              <li class="post">
+                <a href="/2019/11/03/reviving-blog/">Reviving Blog</a>
+              </li>
+            
+          
+            
+              <li class="post">
+                <a href="/2015/04/25/ctdb-glusterfs-nfs-event-monitor-script/">CTDB Glusterfs NFS Event Monitor Script</a>
+              </li>
+            
+          
+            
+              <li class="post">
+                <a href="/2015/04/01/block-dns-queries-based-on-domain-names-via-iptables/">Block DNS Queries Based on Domain Names via IPtables</a>
+              </li>
+            
+          
+            
+              <li class="post">
+                <a href="/2015/02/04/installing-ovirt-3-5-on-centos-7-hosted-engine/">Installing Ovirt 3 5 on Centos 7 Hosted Engine</a>
+              </li>
+            
+          
+        </ul>
+        <h1>Categories</h1>
+        
+        <a href="https://xrsa.net/categories/sysadmin/">Sysadmin</a></li>
+        
+        <a href="https://xrsa.net/categories/virtualization/">Virtualization</a></li>
+        
+      </section>
+    
+  
+</aside>
+
+  </div>
+</div>
+
+    <footer role="contentinfo">
+      <p>Copyright &copy; 2019 Ben Draper - <a href="https://github.com/parsiya/Hugo-Octopress">Theme</a>
+      </p>
+    </footer>
+
+    
+    
+    
+
+    
+      <script>
+        var _gaq=[['_setAccount','UA-53816716-1'],['_trackPageview']];
+        (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+        g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+        s.parentNode.insertBefore(g,s)}(document,'script'));
+      </script>
+    
+  </body>
+</html>
+

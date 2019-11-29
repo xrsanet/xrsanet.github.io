@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  
+  <meta name="viewport" content="width=device-width,minimum-scale=1,maximum-scale=1">
+
+  
+    
+    
+      <link href="/css/fonts.css" rel="stylesheet" type="text/css">
+    
+  
+
+  
+  <title>Installing Ovirt 3 5 on Centos 7 Hosted Engine</title>
+
+  
+  
+  <link rel="stylesheet" href="/css/hugo-octopress.css">
+
+  
+  
+
+  
+    <link rel="stylesheet" href="/css/fork-awesome.min.css">
+  
+
+  
+  <link href="https://xrsa.net/favicon.png" rel="icon">
+
+  
+  
+
+  <meta name="description" content="" />
+  <meta name="keywords" content="">
+  <meta name="author" content="Ben Draper">
+
+  
+  <meta name="generator" content="Hugo 0.60.0" />
+
+  
+  
+
+  
+  
+</head>
+<body>
+
+
+<header role="banner">
+<hgroup>
+  
+  <h1><a href="https://xrsa.net/">Ben Draper</a></h1>
+    <h2>DevOps, Security, Coding and Hacking</h2>
+</hgroup></header>
+
+
+<nav role="navigation">
+<fieldset class="mobile-nav">
+  
+  <select onchange="location = this.value;">
+    <option value="">Navigate…</option>
+      
+        <option value="https://xrsa.net/">» Home</option>
+      
+        <option value="https://xrsa.net/about">» About</option>
+      
+  </select>
+</fieldset>
+
+
+<ul class="main-navigation">
+  
+  
+    
+      <li><a href="https://xrsa.net/" title="Home">Home</a></li>
+    
+  
+    
+      <li><a href="https://xrsa.net/about" title="About"  target="_blank" >About</a></li>
+    
+  
+</ul>
+
+<ul class="subscription">
+  
+    
+        <a href="https://xrsa.net/index.xml" target="_blank" type="application/rss+xml" title="RSS"><i class="fa fa-rss-square fa-lg"></i></a>
+    
+  
+</ul>
+
+
+</nav>
+
+
+<div id="main">
+  <div id="content">
+    <div>
+      <article class="hentry" role="article">
+
+        
+        
+
+<header>
+  <p class="meta">Feb 4, 2015
+     - 7 minute read 
+    
+
+    
+    
+      - <a class="label" href="https://xrsa.net/categories/virtualization/">Virtualization </a>
+    
+  </p>
+  <h1 class="entry-title">
+     Installing Ovirt 3 5 on Centos 7 Hosted Engine 
+  </h1>
+</header>
+
+
+        <div class="entry-content">
+          
+          
+          
+          <p>Below are simple step by step instructions for installing the node and getting it configured for the hosted engine using CentOS 7.</p>
+<h1 id="installation-requirements">Installation Requirements</h1>
+<ul>
+<li>Installing Hosted Engine on CentOS 7 requires oVirt 3.5.1</li>
+<li>Both the node and engine will be running CentOS 7 (Minimal Installation)</li>
+<li>Ensure the host is fully updated via <code>yum update</code> and rebooted before proceeding</li>
+</ul>
+<h1 id="prerequisites">Prerequisites</h1>
+<p><strong>DNS</strong></p>
+<p>Ensure you have set up hostnames for the host and engine. If you do not have a DNS server configured and you are only testing oVirt on a single server, you can use /etc/hosts instead. I have the following:</p>
+<p>Engine: Hostname: engine.xrsa.net, IP Address: 192.168.122.101/24
+<!-- raw HTML omitted -->
+Host: Hostname: ovirt01.xrsa.net, IP Address: 192.168.122.100/24</p>
+<p><strong>NFS</strong></p>
+<p>Ensure you have set up NFS mount points for the engine and virtual machines. If you do not have a shared NFS server and you are only testing oVirt on a single server, you can configure NFS locally on the host instead as shown below.
+<!-- raw HTML omitted --><!-- raw HTML omitted -->
+<em>Please Note:</em> UID/GID of 36:36 is vdsm:kvm which is created when you install oVirt. However, you do not require this user to be created for NFS to work properly.</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">------------
+-<span style="color:#719e07">[</span> <span style="color:#719e07">(</span>Host<span style="color:#719e07">)</span> <span style="color:#719e07">]</span>-
+------------
+<span style="color:#586e75"># yum install -y nfs-utils</span>
+ 
+<span style="color:#586e75"># mkdir /home/{engineha,vms} &amp;&amp; chown 36:36 /home/{engineha,vms}</span>
+<span style="color:#586e75"># cat &gt; /etc/exports &lt;&lt; EOF</span> 
+/home/engineha  192.168.122.0/24<span style="color:#719e07">(</span>rw,anonuid<span style="color:#719e07">=</span>36,anongid<span style="color:#719e07">=</span>36,all_squash<span style="color:#719e07">)</span>
+/home/vms       192.168.122.0/24<span style="color:#719e07">(</span>rw,anonuid<span style="color:#719e07">=</span>36,anongid<span style="color:#719e07">=</span>36,all_squash<span style="color:#719e07">)</span>
+EOF
+#
+ 
+<span style="color:#586e75"># systemctl start rpcbind.service &amp;&amp; systemctl enable rpcbind.service</span>
+<span style="color:#586e75"># systemctl start nfs-server.service &amp;&amp; systemctl enable nfs-server.service</span></code></pre></div>
+<p>Verify you can see and properly mount the correct mount points.</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">----------
+-<span style="color:#719e07">[</span> Host <span style="color:#719e07">]</span>- 
+----------
+<span style="color:#586e75"># showmount -e ovirt01.xrsa.net</span>
+Export list <span style="color:#719e07">for</span> ovirt01.xrsa.net:
+/home/engineha 192.168.122.0/24
+/home/vms      192.168.122.0/24
+<span style="color:#586e75"># mount ovirt01.xrsa.net:/home/engineha /mnt &amp;&amp; umount /mnt</span>
+ 
+<span style="color:#586e75">###</span>
+Please note: The above mount <span style="color:#b58900">command</span> is to verify you can mount
+/home/engineha as a <span style="color:#b58900">test</span> only, you <span style="color:#719e07">do</span> not need to mount this yourself
+as oVirt will ensure its mounted when required. 
+ 
+If you get access denied please run the below <span style="color:#b58900">command</span>
+and rerun the mount test, <span style="color:#719e07">if</span> it still fails verify your NFS server.
+<span style="color:#586e75">####</span>
+ 
+<span style="color:#586e75"># systemctl restart nfs-server.service</span></code></pre></div>
+<h1 id="installation">Installation</h1>
+<p><strong>NTP</strong></p>
+<p>This not a requirement, but it is recommended that you keep your servers time in sync:</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">------------
+-<span style="color:#719e07">[</span> <span style="color:#719e07">(</span>Host<span style="color:#719e07">)</span> <span style="color:#719e07">]</span>-
+------------
+<span style="color:#586e75"># yum install -y ntp</span>
+<span style="color:#586e75"># systemctl start ntpd &amp;&amp; systemctl enable ntpd</span>
+#
+ 
+Verify you can reach the NTP servers:
+ 
+<span style="color:#586e75"># ntpq -p</span></code></pre></div>
+<p>You may put your own NTP servers in /etc/ntp.conf if required.</p>
+<p>Once you have verified DNS and NFS, install the required repositories and packages.</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">------------
+-<span style="color:#719e07">[</span> <span style="color:#719e07">(</span>Host<span style="color:#719e07">)</span> <span style="color:#719e07">]</span>-
+------------
+<span style="color:#586e75"># yum -y install epel-release</span>
+<span style="color:#586e75"># yum localinstall -y http://resources.ovirt.org/pub/yum-repo/ovirt-release35.rpm</span>
+<span style="color:#586e75"># yum install -y ovirt-hosted-engine-setup bind-utils screen</span></code></pre></div>
+<p>We will need an ISO for the hosted engine installation.</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-----------
+-<span style="color:#719e07">[</span> Host <span style="color:#719e07">]</span> -
+-----------
+<span style="color:#586e75"># mkdir /home/tmpengineiso &amp;&amp; cd /home/tmpengineiso</span>
+<span style="color:#586e75"># curl -O http://mirror.ukhost4u.com/centos/7.1.1503/isos/x86_64/CentOS-7-x86_64-Minimal-1503-01.iso</span>
+<span style="color:#586e75"># chown -R 36:36 /home/tmpengineiso</span></code></pre></div>
+<p><em>Please Note:</em> UID/GID of 36:36 is vdsm:kvm which is created when you install oVirt.</p>
+<p>Now all the prerequisites are in place, verify DNS and then go through the hosted-engine wizard.</p>
+<p>When running the wizard make sure you select the Boot type of CDROM, else you will get asked for an OVA file instead.</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-----------
+-<span style="color:#719e07">[</span> Host <span style="color:#719e07">]</span> -
+-----------
+<span style="color:#586e75"># host engine.xrsa.net; host ovirt01.xrsa.net</span>
+<span style="color:#586e75"># screen</span>
+<span style="color:#586e75"># hosted-engine --deploy</span>
+...
+--<span style="color:#719e07">=</span><span style="color:#719e07">=</span> CONFIGURATION <span style="color:#268bd2">PREVIEW</span> <span style="color:#719e07">=</span><span style="color:#719e07">=</span>--
+         
+Bridge interface                   : eth0
+Engine FQDN                        : engine.xrsa.net
+Bridge name                        : ovirtmgmt
+SSH daemon port                    : <span style="color:#2aa198">22</span>
+Firewall manager                   : iptables
+Gateway address                    : 192.168.122.1
+Host name <span style="color:#719e07">for</span> web application      : ovirt01.xrsa.net
+Host ID                            : <span style="color:#2aa198">1</span>
+Image <span style="color:#b58900">alias</span>                        : hosted_engine
+Image size GB                      : <span style="color:#2aa198">25</span>
+Storage connection                 : nfs01.xrsa.net:/home/engineha
+Console <span style="color:#b58900">type</span>                       : vnc
+Memory size MB                     : <span style="color:#2aa198">4096</span>
+MAC address                        : 00:16:3e:71:de:6d
+Boot <span style="color:#b58900">type</span>                          : cdrom
+Number of CPUs                     : <span style="color:#2aa198">2</span>
+ISO image <span style="color:#719e07">(</span><span style="color:#719e07">for</span> cdrom boot<span style="color:#719e07">)</span>         : /home/tmpengineiso/CentOS-7-x86_64-Minimal-1503-01.iso
+CPU Type                           : model_Westmere
+         
+Please confirm installation settings <span style="color:#719e07">(</span>Yes, No<span style="color:#719e07">)</span><span style="color:#719e07">[</span>Yes<span style="color:#719e07">]</span>:</code></pre></div>
+<p>The hosted-engine wizard will give you VNC details so you can connect to the hosted engine virtual machine and install CentOS 7.</p>
+<p><em>Please note:</em> You never VNC to the virtual machines themselves, you always VNC to the oVirt Host that particular virtual machine is running on from your PC/Laptop. Each running virtual machine on the host will get assigned a dedicated port which will give you Video / Keyboard via VNC.</p>
+<p>Getting console access to your virtual machines is much easier once you get to the oVirt Interface, but as we don’t have that yet the first virtual machine running on a host will be assigned port 5900. So in order for us to connect to the hosted engine to install CentOS 7, we would connect to our host on that port as shown below:</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ vncviewer -quality <span style="color:#2aa198">2</span> ovirt01.xrsa.net:5900</code></pre></div>
+<p>Once installed choose option (1) on the hosted-engine wizard, it will wait until you have rebooted the hosted engine virtual machine. The wizard will give you another set of VNC details to connect to if you need it. However, if you configured networking during the install you should be able to SSH instead.</p>
+<p>Once you have connected to the hosted engine, download the repositories, configure NTP and run through the ovirt-engine wizard. Please make sure the admin password matches up with the password set in the hosted-engine wizard.</p>
+<p><strong>Note:</strong></p>
+<blockquote>
+<p>DNS must be set properly so the engine can resolve itself and the host, or the installation will fail!
+<!-- raw HTML omitted --><!-- raw HTML omitted -->
+While in the engine setup wizard below ensure you put a proper ACL for the “NFS export ACL” option. If you do not you will not be able to activate the ISO_DOMAIN later.</p>
+</blockquote>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">--------------
+-<span style="color:#719e07">[</span> <span style="color:#719e07">(</span>Engine<span style="color:#719e07">)</span> <span style="color:#719e07">]</span>-
+--------------
+<span style="color:#586e75"># yum -y update</span>
+<span style="color:#586e75"># yum -y install epel-release</span>
+<span style="color:#586e75"># yum localinstall -y http://resources.ovirt.org/pub/yum-repo/ovirt-release35.rpm</span>
+<span style="color:#586e75"># yum install -y ovirt-engine bind-utils screen ntp</span>
+<span style="color:#586e75"># host engine.xrsa.net; host ovirt01.xrsa.net</span>
+<span style="color:#586e75"># systemctl start ntpd &amp;&amp; systemctl enable ntpd</span>
+<span style="color:#586e75"># ntpq -p</span>
+<span style="color:#586e75"># screen</span>
+<span style="color:#586e75"># engine-setup</span>
+...
+--<span style="color:#719e07">=</span><span style="color:#719e07">=</span> CONFIGURATION <span style="color:#268bd2">PREVIEW</span> <span style="color:#719e07">=</span><span style="color:#719e07">=</span>--
+         
+Application mode                        : both
+Firewall manager                        : firewalld
+Update Firewall                         : True
+Host FQDN                               : engine.xrsa.net
+Engine database name                    : engine
+Engine database secured connection      : False
+Engine database host                    : localhost
+Engine database user name               : engine
+Engine database host name validation    : False
+Engine database port                    : <span style="color:#2aa198">5432</span>
+Engine installation                     : True
+NFS setup                               : True
+PKI organization                        : xrsa.net
+NFS mount point                         : /var/lib/exports/iso
+NFS <span style="color:#b58900">export</span> ACL                          : 192.168.122.0/24<span style="color:#719e07">(</span>rw<span style="color:#719e07">)</span>
+Configure <span style="color:#b58900">local</span> Engine database         : True
+Set application as default page         : True
+Configure Apache SSL                    : True
+Configure WebSocket Proxy               : True
+Engine Host FQDN                        : engine.xrsa.net
+         
+Please confirm installation settings <span style="color:#719e07">(</span>OK, Cancel<span style="color:#719e07">)</span> <span style="color:#719e07">[</span>OK<span style="color:#719e07">]</span>:</code></pre></div>
+<p>Once finished go back to the hosted-engine wizard and finish off the installation by choosing option (1). It will ask you one final time for the hosted engine to be shutdown, wait a few minutes and it will come back up automatically.</p>
+<p>After around a minute you can verify the state of the hosted engine virtual machine by using the following command:</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-----------
+-<span style="color:#719e07">[</span> Host <span style="color:#719e07">]</span> -
+-----------
+<span style="color:#586e75"># hosted-engine --vm-status</span>
+ 
+--<span style="color:#719e07">=</span><span style="color:#719e07">=</span> Host <span style="color:#2aa198">1</span> <span style="color:#268bd2">status</span> <span style="color:#719e07">=</span><span style="color:#719e07">=</span>--
+ 
+Status up-to-date                  : True
+Hostname                           : ovirt01.xrsa.net
+Host ID                            : <span style="color:#2aa198">1</span>
+Engine status                      : <span style="color:#719e07">{</span><span style="color:#2aa198">&#34;reason&#34;</span>: <span style="color:#2aa198">&#34;bad vm status&#34;</span>, <span style="color:#2aa198">&#34;health&#34;</span>: <span style="color:#2aa198">&#34;bad&#34;</span>, <span style="color:#2aa198">&#34;vm&#34;</span>: <span style="color:#2aa198">&#34;up&#34;</span>, <span style="color:#2aa198">&#34;detail&#34;</span>: <span style="color:#2aa198">&#34;powering up&#34;</span><span style="color:#719e07">}</span>
+Score                              : <span style="color:#2aa198">2400</span>
+Local maintenance                  : False
+...
+        host-id<span style="color:#719e07">=</span><span style="color:#2aa198">1</span>
+        <span style="color:#268bd2">score</span><span style="color:#719e07">=</span><span style="color:#2aa198">2400</span>
+        <span style="color:#268bd2">maintenance</span><span style="color:#719e07">=</span>False
+        <span style="color:#268bd2">state</span><span style="color:#719e07">=</span>EngineStarting
+#
+ 
+Please <span style="color:#b58900">wait</span> <span style="color:#719e07">for</span> around five / ten minutes <span style="color:#719e07">for</span> the hosted engine virtual
+machine to come back up properly.
+ 
+<span style="color:#586e75"># hosted-engine --vm-status</span>
+ 
+--<span style="color:#719e07">=</span><span style="color:#719e07">=</span> Host <span style="color:#2aa198">1</span> <span style="color:#268bd2">status</span> <span style="color:#719e07">=</span><span style="color:#719e07">=</span>--
+ 
+Status up-to-date                  : True
+Hostname                           : ovirt01.xrsa.net
+Host ID                            : <span style="color:#2aa198">1</span>
+Engine status                      : <span style="color:#719e07">{</span><span style="color:#2aa198">&#34;health&#34;</span>: <span style="color:#2aa198">&#34;good&#34;</span>, <span style="color:#2aa198">&#34;vm&#34;</span>: <span style="color:#2aa198">&#34;up&#34;</span>, <span style="color:#2aa198">&#34;detail&#34;</span>: <span style="color:#2aa198">&#34;up&#34;</span><span style="color:#719e07">}</span>
+Score                              : <span style="color:#2aa198">2400</span>
+Local maintenance                  : False
+...
+        host-id<span style="color:#719e07">=</span><span style="color:#2aa198">1</span>
+        <span style="color:#268bd2">score</span><span style="color:#719e07">=</span><span style="color:#2aa198">2400</span>
+        <span style="color:#268bd2">maintenance</span><span style="color:#719e07">=</span>False
+        <span style="color:#268bd2">state</span><span style="color:#719e07">=</span>EngineUp
+# </code></pre></div>
+<h1 id="data-domain-and-isodomain-setup">Data Domain and ISO_Domain Setup</h1>
+<p>Before you can create virtual machines in oVirt you need to create a Data Domain and ensure the ISO_DOMAIN is attached to the Default cluster.</p>
+<p>Navigate to <a href="https://engine.xrsa.net">https://engine.xrsa.net</a> and login with admin.</p>
+<p>Create a new Data / NFS Domain by going to “System -&gt; Storage -&gt; New Domain”:</p>
+<p><img src="/images/ovirt_create_datadomain.png" alt="ovirt_create_datadomain"></p>
+<p>You must wait until the NFS01 Data Domain is in an active state.</p>
+<p><img src="/images/ovirt_datadomain_active.png" alt="ovirt_datadomain_activeng"></p>
+<p>Once activated attach the ISO_DOMAIN to the Default Data Center:</p>
+<p><img src="/images/iso_domain_attach.png" alt="iso_domain_attach"></p>
+<p><em>Please note:</em> If you are having issues attaching ISO_DOMAIN to the cluster you might have forgot to add a proper ACL on the “NFS export ACL” option during the engine wizard. You can check this as follows:</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">--------------
+-<span style="color:#719e07">[</span> <span style="color:#719e07">(</span>Engine<span style="color:#719e07">)</span> <span style="color:#719e07">]</span>-
+--------------
+<span style="color:#586e75"># cat /etc/exports.d/ovirt-engine-iso-domain.exports</span>               
+/var/lib/exports/iso    engine.xrsa.net<span style="color:#719e07">(</span>rw<span style="color:#719e07">)</span>
+#
+ 
+This is incorrect as the hosts are also mounting this NFS share not just the engine.
+You can fix this by changing to the subnet the hosts are using.
+ 
+<span style="color:#586e75"># sed -i &#34;s#engine.xrsa.net#192.168.122.0/24#&#34; /etc/exports.d/ovirt-engine-iso-domain.exports</span>
+<span style="color:#586e75"># cat /etc/exports.d/ovirt-engine-iso-domain.exports</span>               
+/var/lib/exports/iso    192.168.122.0/24<span style="color:#719e07">(</span>rw<span style="color:#719e07">)</span>
+<span style="color:#586e75"># systemctl restart nfs-server</span></code></pre></div>
+<p>If everything went as expected you should see both the NFS01 and ISO_DOMAIN in an up and active state:</p>
+<p><img src="/images/iso_nfs_domain_up.png" alt="iso_nfs_domain_up"></p>
+<h1 id="uploading-iso-images">Uploading ISO Images</h1>
+<p>There is no GUI based ISO upload tool during this time, so to upload ISO images you must login to the engine first and run the following commands:</p>
+<div class="highlight"><pre style="color:#93a1a1;background-color:#002b36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">--------------
+-<span style="color:#719e07">[</span> <span style="color:#719e07">(</span>Engine<span style="color:#719e07">)</span> <span style="color:#719e07">]</span>-
+--------------
+<span style="color:#586e75"># curl -O http://mirror.ukhost4u.com/centos/7.1.1503/isos/x86_64/CentOS-7-x86_64-Minimal-1503-01.iso</span>
+<span style="color:#586e75"># ovirt-iso-uploader upload -i ISO_DOMAIN CentOS-7.0-1406-x86_64-Minimal.iso</span>
+<span style="color:#586e75"># rm CentOS-7.0-1406-x86_64-Minimal.iso</span></code></pre></div>
+<h1 id="using-ovirt">Using oVirt</h1>
+<p>At this point everything should be up and running for you to start creating virtual machines. For more information please read the oVirt Documentation: <a href="http://www.ovirt.org/Documentation"><a href="http://www.ovirt.org/Documentation">http://www.ovirt.org/Documentation</a></a></p>
+
+        </div>
+        
+
+<footer>
+  <p class="meta">
+    <span class="byline author vcard">Posted by <span class="fn">Ben Draper</span></span>
+    
+    <time>Feb 4, 2015</time>
+    
+    </span>
+  </p>
+
+  
+
+  <p class="meta">
+    
+        <a class="basic-alignment left" href="https://xrsa.net/2014/08/25/running-vmware-esxi-under-ovirt-3.5/" title="Running VMware ESXi Under Ovirt 3.5">Running VMware ESXi Under Ovirt 3.5</a>
+    
+
+    
+      <a class="basic-alignment right" href="https://xrsa.net/2015/04/01/block-dns-queries-based-on-domain-names-via-iptables/" title="Block DNS Queries Based on Domain Names via IPtables">Block DNS Queries Based on Domain Names via IPtables</a>
+    
+  </p>
+  
+</footer>
+
+      </article>
+    </div>
+    
+
+<aside class="sidebar thirds">
+  <section class="first odd">
+
+    
+      <h1>Whoami</h1>
+    
+
+    <p>
+      
+        I am an established engineer, with a great interest in Security, Automation and Modern Architectures.
+<!-- raw HTML omitted --><!-- raw HTML omitted -->
+If you do want to contact me you can email me at <a href="mailto:%60ben@xrsa.net">`ben@xrsa.net</a>` or check out my social networking pages below.
+      
+    </p>
+  </section>
+
+
+
+  
+  <ul class="sidebar-nav">
+    <li class="sidebar-nav-item">
+      
+      
+      <a target="_blank" href="https://gitlab.com/xrsanet" title="https://gitlab.com/xrsanet"><i class="fa fa-gitlab fa-3x"></i></a>
+      <a target="_blank" href="https://twitter.com/xrsanet/" title="https://twitter.com/xrsanet/"><i class="fa fa-twitter fa-3x"></i></a>
+      
+         
+      
+      <a target="_blank" href="https://www.linkedin.com/in/bendraper00" title="https://www.linkedin.com/in/bendraper00"><i class="fa fa-linkedin fa-3x"></i></a>
+      
+      
+      
+      
+      
+      
+
+    
+    
+    </li>
+  </ul>
+
+  
+
+  
+
+  
+  
+  
+    
+      <section class="even">
+        <h1>Recent Posts</h1>
+        <ul id="recent_posts">
+          
+          
+            
+          
+            
+              <li class="post">
+                <a href="/2019/11/03/reviving-blog/">Reviving Blog</a>
+              </li>
+            
+          
+            
+              <li class="post">
+                <a href="/2015/04/25/ctdb-glusterfs-nfs-event-monitor-script/">CTDB Glusterfs NFS Event Monitor Script</a>
+              </li>
+            
+          
+            
+              <li class="post">
+                <a href="/2015/04/01/block-dns-queries-based-on-domain-names-via-iptables/">Block DNS Queries Based on Domain Names via IPtables</a>
+              </li>
+            
+          
+            
+              <li class="post">
+                <a href="/2015/02/04/installing-ovirt-3-5-on-centos-7-hosted-engine/">Installing Ovirt 3 5 on Centos 7 Hosted Engine</a>
+              </li>
+            
+          
+        </ul>
+        <h1>Categories</h1>
+        
+        <a href="https://xrsa.net/categories/sysadmin/">Sysadmin</a></li>
+        
+        <a href="https://xrsa.net/categories/virtualization/">Virtualization</a></li>
+        
+      </section>
+    
+  
+</aside>
+
+  </div>
+</div>
+
+    <footer role="contentinfo">
+      <p>Copyright &copy; 2019 Ben Draper - <a href="https://github.com/parsiya/Hugo-Octopress">Theme</a>
+      </p>
+    </footer>
+
+    
+    
+    
+
+    
+      <script>
+        var _gaq=[['_setAccount','UA-53816716-1'],['_trackPageview']];
+        (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+        g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+        s.parentNode.insertBefore(g,s)}(document,'script'));
+      </script>
+    
+  </body>
+</html>
+
