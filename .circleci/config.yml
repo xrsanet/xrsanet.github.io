@@ -13,7 +13,7 @@ jobs:
             - run:
                 name: Get current site
                 working_directory: ~/
-                command: git clone -b master git@github.com:xrsanet/xrsanet.github.io.git public
+                command: git clone -b source git@github.com:xrsanet/xrsanet.github.io.git public
             - run:
                 name: Generate site
                 working_directory: ~/xrsanet.github.io
