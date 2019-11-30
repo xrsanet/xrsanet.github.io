@@ -26,7 +26,7 @@ jobs:
                     git config user.email "ben@xrsa.net"
                     git config user.name "Deployment Bot"
                     git add .
-                    git commit --allow-empty -m "Trigger deployment"
+                    git commit --allow-empty -m "CircleCI Deployment - [ci skip]"
                     git push -q git@github.com:xrsanet/xrsanet.github.io.git master
 
 workflows:
