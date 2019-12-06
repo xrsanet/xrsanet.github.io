@@ -45,16 +45,6 @@ Code #!/bin/sh # Event script to monitor GlusterFS NFS in a cluster environment 
     </item>
     
     <item>
-      <title>Block DNS Queries Based on Domain Names via IPtables</title>
-      <link>https://xrsa.net/2015/04/01/block-dns-queries-based-on-domain-names-via-iptables/</link>
-      <pubDate>Wed, 01 Apr 2015 16:08:22 +0000</pubDate>
-      
-      <guid>https://xrsa.net/2015/04/01/block-dns-queries-based-on-domain-names-via-iptables/</guid>
-      <description>This code will generate or apply rules for IPtables to block DNS queries based on domain names. I wrote this script because I did not want to manually convert each section of the domain into hex with their respective sizes every time I needed to block a random set of domains.
-Example # ./BlockDomain.py Syntax: ./BlockDomain.py gen|apply &amp;lt;DOMAIN&amp;gt;... gen : Generate the required IPTable rules apply : Apply the required IPTable rules (Must be root) Examples: .</description>
-    </item>
-    
-    <item>
       <title>Installing Ovirt 3 5 on Centos 7 Hosted Engine</title>
       <link>https://xrsa.net/2015/02/04/installing-ovirt-3-5-on-centos-7-hosted-engine/</link>
       <pubDate>Wed, 04 Feb 2015 19:30:13 +0000</pubDate>
