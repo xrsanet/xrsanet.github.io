@@ -5,4 +5,4 @@ draft: false
 ---
 I am bringing my old blog back to life.
 
-More to come, once I have moved this blog over to a proper CI/CD process.
+More to come, around DevOps and CI/CD.

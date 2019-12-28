@@ -52,7 +52,7 @@ pygmentsStyle = "solarized-dark"
   continueReadingText = "More..."
 
   twitter = "https://twitter.com/xrsanet/"
-  gitlab = "https://gitlab.com/xrsanet"
+  github = "https://github.com/xrsanet/"
   linkedin = "https://www.linkedin.com/in/bendraper00"
 
   rss = true
