@@ -1,5 +1,5 @@
 ---
-title: "Hugo, GitHub Pages, CircleCI and Cloudflare"
+title: "Creating a Blog using Hugo, GitHub, Pages, CircleCI and Cloudflare"
 date: 2019-11-30T19:30:00Z
 draft: false
 categories: ["DevOps"]
@@ -152,4 +152,4 @@ Ensure in the SSL/TLS section that you configure mode `Full` and it will work wi
 
 # Final Notes
 
-That is it, hopefully, this has been helpful. You should now have a fully working blog which is free, fast, secure and easy to update due CI/CD.
+That is it, hopefully, this has been helpful. You should now have a fully working blog which is free, fast, secure and easy to update via CI/CD.
