@@ -12,11 +12,11 @@
     
     
     <item>
-      <title>Hugo, GitHub Pages, CircleCI and Cloudflare</title>
-      <link>https://xrsa.net/2019/11/30/hugo-github-pages-circleci-and-cloudflare/</link>
+      <title>Creating a Blog using Hugo, GitHub, Pages, CircleCI and Cloudflare</title>
+      <link>https://xrsa.net/2019/11/30/creating-a-blog-using-hugo-github-pages-circleci-and-cloudflare/</link>
       <pubDate>Sat, 30 Nov 2019 19:30:00 +0000</pubDate>
       
-      <guid>https://xrsa.net/2019/11/30/hugo-github-pages-circleci-and-cloudflare/</guid>
+      <guid>https://xrsa.net/2019/11/30/creating-a-blog-using-hugo-github-pages-circleci-and-cloudflare/</guid>
       <description>This Blog is created and updated with the same processes outlined here. I will explain how you can create your own Blog using Hugo, Github Pages (Custom Domain) with CI/CD using CircleCI and fronted by Cloudflare.
 Static websites have many advantages over their dynamic counterparts, to list a few:
  More secure due to them being pure HTML/CSS, no dynamic rendering Faster to load and cache with CDNs Do not require a Server or Database Can be hosted using S3 Buckets, Github/Gitlab Pages  Step 1 - Creating Hugo Site/Files This is a popular open-source static site generator.</description>

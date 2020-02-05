@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  
+  <meta name="viewport" content="width=device-width,minimum-scale=1,maximum-scale=1">
+
+  
+    
+    
+      <link href="/css/fonts.css" rel="stylesheet" type="text/css">
+    
+  
+
+  
+  <title>Creating a Blog using Hugo, GitHub, Pages, CircleCI and Cloudflare</title>
+
+  
+  
+  <link rel="stylesheet" href="/css/hugo-octopress.css">
+
+  
+  
+
+  
+    <link rel="stylesheet" href="/css/fork-awesome.min.css">
+  
+
+  
+  <link href="https://xrsa.net/favicon.png" rel="icon">
+
+  
+  
+
+  <meta name="description" content="" />
+  <meta name="keywords" content="">
+  <meta name="author" content="Ben Draper">
+
+  
+  <meta name="generator" content="Hugo 0.60.1" />
+
+  
+  
+
+  
+  
+</head>
+<body>
+
+
+<header role="banner">
+<hgroup>
+  
+  <h1><a href="https://xrsa.net/">Ben Draper</a></h1>
+    <h2>DevOps, Security, Coding and Hacking</h2>
+</hgroup></header>
+
+
+<nav role="navigation">
+<fieldset class="mobile-nav">
+  
+  <select onchange="location = this.value;">
+    <option value="">Navigate…</option>
+      
+        <option value="https://xrsa.net/">» Home</option>
+      
+        <option value="https://xrsa.net/about">» About</option>
+      
+  </select>
+</fieldset>
+
+
+<ul class="main-navigation">
+  
+  
+    
+      <li><a href="https://xrsa.net/" title="Home">Home</a></li>
+    
+  
+    
+      <li><a href="https://xrsa.net/about" title="About"  target="_blank" >About</a></li>
+    
+  
+</ul>
+
+<ul class="subscription">
+  
+    
+        <a href="https://xrsa.net/index.xml" target="_blank" type="application/rss+xml" title="RSS"><i class="fa fa-rss-square fa-lg"></i></a>
+    
+  
+</ul>
+
+
+</nav>
+
+
+<div id="main">
+  <div id="content">
+    <div>
+      <article class="hentry" role="article">
+
+        
+        
+
+<header>
+  <p class="meta">Nov 30, 2019
+     - 5 minute read 
+    
+
+    
+    
+      - <a class="label" href="https://xrsa.net/categories/devops/">DevOps </a>
+    
+  </p>
+  <h1 class="entry-title">
+     Creating a Blog using Hugo, GitHub, Pages, CircleCI and Cloudflare 
+  </h1>
+</header>
+
+
+        <div class="entry-content">
+          
+          
+          
+          <p>This Blog is created and updated with the same processes outlined here. I will explain how you can create your own Blog using Hugo, Github Pages (Custom Domain) with CI/CD using CircleCI and fronted by Cloudflare.</p>
+<p>Static websites have many advantages over their dynamic counterparts, to list a few:</p>
+<ul>
+<li>More secure due to them being pure HTML/CSS, no dynamic rendering</li>
+<li>Faster to load and cache with CDNs</li>
+<li>Do not require a Server or Database</li>
+<li>Can be hosted using S3 Buckets, Github/Gitlab Pages</li>
+</ul>
+<h1 id="step-1--creating-hugo-sitefiles">Step 1 - Creating Hugo Site/Files</h1>
+<p>This is a popular open-source static site generator. I like it due to the ability to locally test and validate what your site will look like before committing code.</p>
+<p>There is a <a href="https://gohugo.io/getting-started/quick-start/">quick start guide</a> on how to create a site using this framework. If you want to use my Blog as a reference, as it's based on Hugo you can find it here:</p>
+<ul>
+<li><a href="https://github.com/xrsanet/xrsanet.github.io/tree/source">https://github.com/xrsanet/xrsanet.github.io/tree/source</a></li>
+</ul>
+<p>If you do use my code as a reference, ensure within the <code>config.toml</code> file that you change <code>baseurl</code> to your own domain, edit as you wish and remove everything in the <code>content</code> directory.</p>
+<p>Before moving onto the next section ensure you have the files ready to commit to a Github repo.</p>
+<h1 id="step-2--create-githhub-repo-for-github-pages">Step 2 - Create GithHub Repo for GitHub Pages</h1>
+<p>The plan here is to keep the source code and gh-pages within a single repo, but separate them by branch. This is done by creating a source branch where the Hugo files go, leaving the master branch for the HTML pages, which CircleCI will generate and commit to.</p>
+<p>Create a blank repo <code>&lt;USERNAME&gt;.github.io</code>. This must be your username, for example, mine is <code>xrsanet.github.io</code>.</p>
+<p>Once that is done, you will want to switch to the source branch and then copy your Hugo files over.</p>
+<pre><code>#
+# Example, Hugo files are in the hugo-site directory, yours will be different
+#
+
+$ git clone git@github.com:xrsanet/xrsanet.github.io.git
+Cloning into 'xrsanet.github.io.git'...
+warning: You appear to have cloned an empty repository.
+$ cd xrsanet.github.io.git
+$ git checkout -b source
+Switched to a new branch 'source'
+$ cp -rT ../hugo-site .
+$ ls
+archetypes  config.toml  content  README.md  resources  static  themes
+$ git commit -m &quot;Initial commit&quot;
+$ git push origin source
+</code></pre><blockquote>
+<p>Note: GitHub pages will still not work yet as we have not got CircleCI to generate the HTML pages from the Hugo files.</p>
+</blockquote>
+<h1 id="step-3--circleci-configuration-for-cicd">Step 3 - CircleCI Configuration for CI/CD</h1>
+<p><strong>3.1 - Create a new key pair</strong></p>
+<p>Create a new key pair:</p>
+<pre><code>$ ssh-keygen 
+Generating public/private rsa key pair.
+Enter file in which to save the key (/home/blackhole/.ssh/id_rsa): circleci
+Enter passphrase (empty for no passphrase): 
+Enter same passphrase again: 
+Your identification has been saved in circleci.
+Your public key has been saved in circleci.pub.
+The key fingerprint is:
+...
+$
+</code></pre><p><strong>3.2 - Create CircleCI Account and add Github Repo</strong></p>
+<p>Once you have created your account, add your .github.io project, then do the following:</p>
+<ul>
+<li>Goto Project Settings</li>
+<li>Under SSH Permissions, add the <code>circleci</code> Private Key you just generated, ensure you copy the Fingerprint as you will need this in a bit</li>
+</ul>
+<p><strong>3.3 - Add Public Key to Github Repo</strong></p>
+<p>Now go to your Github project settings, under Deploy Key, add the <code>circleci.pub</code> Public Key you just generated.</p>
+<p><strong>3.4 - Create CircleCI Configuration</strong></p>
+<p>Create a CircleCI configuration file within the same source branch as before:</p>
+<pre><code>$ mkdir .circleci
+$ cat &gt; .circleci/config.yml &lt;&lt; EOF
+version: 2.0
+
+jobs:
+    build:
+        docker:
+            - image: cibuilds/hugo:0.60
+        working_directory: ~/&lt;USERNAME&gt;.github.io
+        steps:
+            - add_ssh_keys:
+                fingerprints:
+                    - &quot;&lt;FINGERPRINT&gt;&quot;
+            - checkout
+            - run:
+                name: Get current site
+                working_directory: ~/
+                command: git clone -b master git@github.com:&lt;USERNAME&gt;/&lt;USERNAME&gt;.github.io.git public
+            - run:
+                name: Generate site
+                working_directory: ~/&lt;USERNAME&gt;.github.io
+                command: HUGO_ENV=production hugo -d ~/public
+            - deploy:
+                name: Deploy to Github Pages
+                working_directory: ~/public
+                command: |
+                    git config credential.helper 'cache --timeout=120'
+                    git config user.email &quot;&lt;EMAIL&gt;&quot;
+                    git config user.name &quot;CircleCI Deployment&quot;
+                    git add .
+                    git commit --allow-empty -m &quot;CircleCI Deployment - [ci skip]&quot;
+                    git push -q git@github.com:&lt;USERNAME&gt;/&lt;USERNAME&gt;.github.io.git master
+
+workflows:
+  version: 2
+  main:
+    jobs:
+    - build:
+        filters:
+          branches:
+            only: source
+
+EOF
+</code></pre><blockquote>
+<p>Note: Change <code>&lt;USERNAME&gt;</code>, <code>&lt;EMAIL&gt;</code> to your respective values. Also, note <code>[ci skip]</code>, will ensure that CircleCI skips the master branch when building/pushing the HTML files and will only build from the source branch.</p>
+</blockquote>
+<p><strong>3.5 - Commit CircleCI Configuration</strong></p>
+<p>Once you have made all the required changes to <code>.circleci/conig.yml</code> commit the configuration to the source branch.</p>
+<p>This will trigger CircleCI to build and commit your site under: <code>https://&lt;USERNAME&gt;.github.io</code>. If you get failures, check what errors your Pipeline is getting, could be Hugo build errors or permission errors when deploying.</p>
+<h1 id="step-4--configure-custom-domain-and-cloudflare">Step 4 - Configure Custom Domain and Cloudflare</h1>
+<p><strong>4.1 - GitHub Pages Custom Domain</strong></p>
+<p>Getting GitHub Pages working with a custom domain is simple, all you do is create a <code>CNAME</code> file in the <code>master</code> branch. This can only be one domain on a single line, ensure you do not include <code>www</code> as we tackle that with Cloudflare. For example, mine is <code>xrsa.net</code>.</p>
+<p><strong>4.2 - Cloudflare DNS</strong></p>
+<p>Cloudflare requires you to move your Nameservers over but once done all you do is the following to get it all working as expected.</p>
+<p><img src="/images/cloudflare_xrsa_dns.png" alt="cloudflare_xrsa_dns"></p>
+<p><strong>4.3 - Cloudflare SSL/TLS</strong></p>
+<p>Ensure in the SSL/TLS section that you configure mode <code>Full</code> and it will work with both <code>www.&lt;DOMAIN&gt;</code> and <code>&lt;DOMAIN&gt;</code>.</p>
+<h1 id="final-notes">Final Notes</h1>
+<p>That is it, hopefully, this has been helpful. You should now have a fully working blog which is free, fast, secure and easy to update via CI/CD.</p>
+
+        </div>
+        
+
+<footer>
+  <p class="meta">
+    <span class="byline author vcard">Posted by <span class="fn">Ben Draper</span></span>
+    
+    <time>Nov 30, 2019</time>
+    
+    </span>
+  </p>
+
+  
+
+  <p class="meta">
+    
+        <a class="basic-alignment left" href="https://xrsa.net/2019/11/03/reviving-blog/" title="Reviving Blog">Reviving Blog</a>
+    
+
+    
+  </p>
+  
+</footer>
+
+      </article>
+    </div>
+    
+
+<aside class="sidebar thirds">
+  <section class="first odd">
+
+    
+      <h1>Whoami</h1>
+    
+
+    <p>
+      
+        <p>I am an established engineer, with a great interest in Security, Automation and DevOps.</p>
+<p><!-- raw HTML omitted --><!-- raw HTML omitted -->
+If you do want to contact me you can email me at <a href="mailto:%60ben@xrsa.net">`ben@xrsa.net</a>` or check out my social networking pages below.</p>
+
+      
+    </p>
+  </section>
+
+
+
+  
+  <ul class="sidebar-nav">
+    <li class="sidebar-nav-item">
+      <a target="_blank" href="https://github.com/xrsanet/" title="https://github.com/xrsanet/"><i class="fa fa-github fa-3x"></i></a>
+      
+      
+      <a target="_blank" href="https://twitter.com/xrsanet/" title="https://twitter.com/xrsanet/"><i class="fa fa-twitter fa-3x"></i></a>
+      
+         
+      
+      <a target="_blank" href="https://www.linkedin.com/in/bendraper00" title="https://www.linkedin.com/in/bendraper00"><i class="fa fa-linkedin fa-3x"></i></a>
+      
+      
+      
+      
+      
+      
+
+    
+    
+    </li>
+  </ul>
+
+  
+
+  
+
+  
+  
+  
+    
+      <section class="even">
+        <h1>Recent Posts</h1>
+        <ul id="recent_posts">
+          
+          
+            
+              <li class="post">
+                <a href="/2019/11/30/creating-a-blog-using-hugo-github-pages-circleci-and-cloudflare/">Creating a Blog using Hugo, GitHub, Pages, CircleCI and Cloudflare</a>
+              </li>
+            
+          
+            
+          
+            
+              <li class="post">
+                <a href="/2019/11/03/reviving-blog/">Reviving Blog</a>
+              </li>
+            
+          
+            
+              <li class="post">
+                <a href="/2015/04/25/ctdb-glusterfs-nfs-event-monitor-script/">CTDB Glusterfs NFS Event Monitor Script</a>
+              </li>
+            
+          
+            
+              <li class="post">
+                <a href="/2015/02/04/installing-ovirt-3-5-on-centos-7-hosted-engine/">Installing Ovirt 3 5 on Centos 7 Hosted Engine</a>
+              </li>
+            
+          
+        </ul>
+        <h1>Categories</h1>
+        
+        <a href="https://xrsa.net/categories/devops/">DevOps</a></li>
+        
+        <a href="https://xrsa.net/categories/sysadmin/">Sysadmin</a></li>
+        
+        <a href="https://xrsa.net/categories/virtualization/">Virtualization</a></li>
+        
+      </section>
+    
+  
+</aside>
+
+  </div>
+</div>
+
+    <footer role="contentinfo">
+      <p>Copyright &copy; 2020 Ben Draper - <a href="https://github.com/parsiya/Hugo-Octopress">Theme</a>
+      </p>
+    </footer>
+
+    
+    
+    
+
+    
+      <script>
+        var _gaq=[['_setAccount','UA-53816716-1'],['_trackPageview']];
+        (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+        g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+        s.parentNode.insertBefore(g,s)}(document,'script'));
+      </script>
+    
+  </body>
+</html>
+
